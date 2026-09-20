@@ -1,10 +1,8 @@
-# ═══════════════════════════════════════════════════════════════
-#  WordPress Performance Optimization — Apache .htaccess
-#  Author: Mehran Moghadasi
-#  Tested on: Apache 2.4 with mod_deflate, mod_expires, mod_headers
-# ═══════════════════════════════════════════════════════════════
+# WordPress performance + hardening — Apache 2.4 (.htaccess)
+# Requires: mod_rewrite, mod_deflate, mod_expires, mod_headers. Each block is skipped if its module is absent.
+# Put this in the WordPress root. If a caching plugin manages .htaccess, merge rather than overwrite.
 
-# ─── WordPress Standard Rewrite Rules ───────────────────────────
+# --- WordPress rewrite rules (unchanged from core) ---------------------------------------------------------
 <IfModule mod_rewrite.c>
     RewriteEngine On
     RewriteBase /
@@ -14,105 +12,79 @@
     RewriteRule . /index.php [L]
 </IfModule>
 
-# ─── GZIP Compression ───────────────────────────────────────────
+# --- Compression -------------------------------------------------------------------------------------------
+# Brotli when mod_brotli is loaded, gzip otherwise. Fonts in woff/woff2 and images are already compressed.
+<IfModule mod_brotli.c>
+    AddOutputFilterByType BROTLI_COMPRESS text/html text/plain text/css text/xml text/javascript
+    AddOutputFilterByType BROTLI_COMPRESS application/javascript application/json application/xml
+    AddOutputFilterByType BROTLI_COMPRESS application/xhtml+xml application/rss+xml image/svg+xml font/ttf font/otf
+</IfModule>
 <IfModule mod_deflate.c>
-    AddOutputFilterByType DEFLATE text/html
-    AddOutputFilterByType DEFLATE text/css
-    AddOutputFilterByType DEFLATE text/javascript
-    AddOutputFilterByType DEFLATE text/xml
-    AddOutputFilterByType DEFLATE text/plain
-    AddOutputFilterByType DEFLATE application/javascript
-    AddOutputFilterByType DEFLATE application/x-javascript
-    AddOutputFilterByType DEFLATE application/json
-    AddOutputFilterByType DEFLATE application/xml
-    AddOutputFilterByType DEFLATE application/xhtml+xml
-    AddOutputFilterByType DEFLATE application/rss+xml
-    AddOutputFilterByType DEFLATE image/svg+xml
-    AddOutputFilterByType DEFLATE font/ttf
-    AddOutputFilterByType DEFLATE font/otf
-    AddOutputFilterByType DEFLATE font/woff
-    AddOutputFilterByType DEFLATE font/woff2
-    AddOutputFilterByType DEFLATE application/font-woff
-    AddOutputFilterByType DEFLATE application/font-woff2
-
-    # Don't compress already-compressed formats
-    SetEnvIfNoCase Request_URI \
-        \.(?:gif|jpe?g|jpg|png|webp|avif|zip|gz|bz2|rar|7z|mp4|mp3|ogg|woff2)$ \
-        no-gzip dont-vary
+    AddOutputFilterByType DEFLATE text/html text/plain text/css text/xml text/javascript
+    AddOutputFilterByType DEFLATE application/javascript application/json application/xml
+    AddOutputFilterByType DEFLATE application/xhtml+xml application/rss+xml image/svg+xml font/ttf font/otf
+    <IfModule mod_setenvif.c>
+        SetEnvIfNoCase Request_URI \.(?:gif|jpe?g|png|webp|avif|zip|gz|br|7z|mp4|mp3|ogg|woff2?)$ no-gzip
+    </IfModule>
 </IfModule>
 
-# ─── Browser Caching ────────────────────────────────────────────
+# --- Browser caching (Expires) -------------------------------------------------------------------------------
+# HTML is never cached here: WordPress / your caching plugin decide that per response.
 <IfModule mod_expires.c>
     ExpiresActive On
-    ExpiresDefault                              "access plus 1 month"
-
-    # HTML — short cache (content changes)
-    ExpiresByType text/html                     "access plus 0 seconds"
-
-    # CSS and JavaScript
-    ExpiresByType text/css                      "access plus 1 year"
-    ExpiresByType application/javascript        "access plus 1 year"
-    ExpiresByType text/javascript               "access plus 1 year"
-
-    # Images
-    ExpiresByType image/jpeg                    "access plus 1 year"
-    ExpiresByType image/png                     "access plus 1 year"
-    ExpiresByType image/gif                     "access plus 1 year"
-    ExpiresByType image/webp                    "access plus 1 year"
-    ExpiresByType image/avif                    "access plus 1 year"
-    ExpiresByType image/svg+xml                 "access plus 1 year"
-    ExpiresByType image/x-icon                  "access plus 1 year"
-
-    # Fonts
-    ExpiresByType font/ttf                      "access plus 1 year"
-    ExpiresByType font/otf                      "access plus 1 year"
-    ExpiresByType font/woff                     "access plus 1 year"
-    ExpiresByType font/woff2                    "access plus 1 year"
-    ExpiresByType application/font-woff         "access plus 1 year"
-    ExpiresByType application/font-woff2        "access plus 1 year"
-
-    # Data
-    ExpiresByType application/json              "access plus 0 seconds"
-    ExpiresByType application/xml               "access plus 0 seconds"
-    ExpiresByType text/xml                      "access plus 0 seconds"
+    ExpiresDefault                          "access plus 1 month"
+    ExpiresByType text/html                 "access plus 0 seconds"
+    ExpiresByType application/json          "access plus 0 seconds"
+    ExpiresByType application/xml           "access plus 0 seconds"
+    ExpiresByType text/xml                  "access plus 0 seconds"
+    ExpiresByType text/css                  "access plus 1 year"
+    ExpiresByType application/javascript    "access plus 1 year"
+    ExpiresByType text/javascript           "access plus 1 year"
+    ExpiresByType image/jpeg                "access plus 1 year"
+    ExpiresByType image/png                 "access plus 1 year"
+    ExpiresByType image/gif                 "access plus 1 year"
+    ExpiresByType image/webp                "access plus 1 year"
+    ExpiresByType image/avif                "access plus 1 year"
+    ExpiresByType image/svg+xml             "access plus 1 year"
+    ExpiresByType image/x-icon              "access plus 1 year"
+    ExpiresByType font/ttf                  "access plus 1 year"
+    ExpiresByType font/otf                  "access plus 1 year"
+    ExpiresByType font/woff                 "access plus 1 year"
+    ExpiresByType font/woff2                "access plus 1 year"
 </IfModule>
 
-# ─── Cache-Control Headers ──────────────────────────────────────
 <IfModule mod_headers.c>
-    # Add immutable flag to versioned assets (prevents revalidation)
-    <FilesMatch "\.(css|js|woff2?)$">
+    # Versioned assets (WordPress appends ?ver=) can be immutable.
+    <FilesMatch "\.(css|js|woff2?|ttf|otf|svg|png|jpe?g|gif|webp|avif)$">
         Header append Cache-Control "public, immutable"
     </FilesMatch>
 
-    # Prevent caching of dynamic content
-    <FilesMatch "\.(php|html)$">
-        Header set Cache-Control "no-store, no-cache, must-revalidate"
-        Header set Pragma "no-cache"
-    </FilesMatch>
-
-    # CORS headers for fonts (required for cross-origin font loading)
-    <FilesMatch "\.(ttf|ttc|otf|eot|woff|woff2|font.css|css)$">
+    # Fonts and CSS may be requested cross-origin from a CDN host.
+    <FilesMatch "\.(ttf|otf|woff2?|css)$">
         Header set Access-Control-Allow-Origin "*"
     </FilesMatch>
 
-    # Vary header for proper cache differentiation
-    Header append Vary: Accept-Encoding
+    # Note the syntax: no colon after "Vary".
+    Header append Vary "Accept-Encoding"
+
+    # Security headers (X-XSS-Protection is deprecated and omitted on purpose).
+    Header always set X-Content-Type-Options "nosniff"
+    Header always set X-Frame-Options "SAMEORIGIN"
+    Header always set Referrer-Policy "strict-origin-when-cross-origin"
+    Header always set Permissions-Policy "camera=(), microphone=(), geolocation=()"
 </IfModule>
 
-# ─── Security Headers (bonus — hardens the site) ────────────────
-<IfModule mod_headers.c>
-    Header set X-Content-Type-Options "nosniff"
-    Header set X-Frame-Options "SAMEORIGIN"
-    Header set X-XSS-Protection "1; mode=block"
-    Header set Referrer-Policy "strict-origin-when-cross-origin"
-    Header set Permissions-Policy "camera=(), microphone=(), geolocation=()"
-</IfModule>
-
-# ─── Disable Directory Browsing ─────────────────────────────────
+# --- Hardening -----------------------------------------------------------------------------------------------
 Options -Indexes
 
-# ─── Block Access to Sensitive Files ────────────────────────────
-<FilesMatch "^(wp-config\.php|\.htaccess|\.htpasswd|readme\.html|license\.txt|xmlrpc\.php)$">
-    Order deny,allow
-    Deny from all
+# xmlrpc.php is intentionally NOT blocked here: Jetpack and the mobile apps need it. The mu-plugin disables
+# it via the xmlrpc_enabled filter instead; add it to the list below only if you are sure nothing uses it.
+<FilesMatch "^(wp-config\.php|\.htaccess|\.htpasswd|readme\.html|license\.txt)$">
+    <IfModule mod_authz_core.c>
+        Require all denied
+    </IfModule>
+    <IfModule !mod_authz_core.c>
+        Order deny,allow
+        Deny from all
+    </IfModule>
 </FilesMatch>

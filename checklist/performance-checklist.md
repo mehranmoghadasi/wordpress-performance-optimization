@@ -1,6 +1,6 @@
 # ✅ WordPress Performance Checklist — 50-Point Pre-Launch Audit
 
-> Author: Mehran Moghadasi | Used across 30+ client WordPress sites
+> A working checklist. Score yourself honestly; the target is a habit, not a number.
 
 **How to use:** Run this checklist before every site launch and monthly thereafter.
 Score 1 point per completed item. Target: **45+ / 50** before launch.
@@ -70,7 +70,7 @@ Score 1 point per completed item. Target: **45+ / 50** before launch.
 ## 📊 Core Web Vitals (10 points)
 
 - [ ] **LCP under 2.5s** — Largest Contentful Paint (hero image or heading)
-- [ ] **FID / INP under 200ms** — First Input Delay / Interaction to Next Paint
+- [ ] **INP under 200ms** — Interaction to Next Paint (replaced FID as a Core Web Vital in March 2024)
 - [ ] **CLS under 0.1** — No layout shift from ads, fonts, or dynamic content
 - [ ] **FCP under 1.8s** — First Contentful Paint
 - [ ] **TTFB under 800ms** — Time to First Byte
@@ -90,7 +90,7 @@ After launch, run these monthly:
 3. Update WordPress core, themes, and plugins
 4. Check for unused media files in the Media Library
 5. Review Google Search Console for new Core Web Vitals issues
-6. Audit and remove expired transients
+6. Check `wp_options` autoload size (`wp db query "SELECT SUM(LENGTH(option_value)) FROM wp_options WHERE autoload='yes'"`)
 
 ---
 
