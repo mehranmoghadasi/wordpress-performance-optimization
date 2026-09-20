@@ -5,7 +5,7 @@
 [![WordPress 6.3+](https://img.shields.io/badge/WordPress-6.3%2B-21759B?logo=wordpress&logoColor=white)](https://wordpress.org)
 [![PHP 7.4+](https://img.shields.io/badge/PHP-7.4%2B-777BB4?logo=php&logoColor=white)](https://php.net)
 [![License: MIT](https://img.shields.io/badge/License-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-15%20passing-brightgreen)](tests/run.php)
+[![CI](https://github.com/mehranmoghadasi/wordpress-performance-optimization/actions/workflows/php.yml/badge.svg)](https://github.com/mehranmoghadasi/wordpress-performance-optimization/actions/workflows/php.yml)
 
 ## What is in here
 
@@ -74,7 +74,7 @@ php -l mu-plugins/mm-performance.php
 php tests/run.php
 ```
 
-`ci/ci.yml` is a GitHub Actions workflow running both on PHP 7.4 and 8.3 — copy it to `.github/workflows/`.
+CI runs `php -l` and the tests on PHP 7.4 and 8.3 on every push (`.github/workflows/php.yml`; a copy lives in `ci/ci.yml`).
 
 ## Limitations
 
